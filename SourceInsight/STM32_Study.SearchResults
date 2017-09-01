@@ -1,0 +1,2 @@
+---- #define	STM32F10X_LD_VL Matches (1 in 1 files) ----
+System_stm32f10x.c (d:\workstation\git_workstaion\stm32_study\libraries\cmsis):#define	STM32F10X_LD_VL 1   
