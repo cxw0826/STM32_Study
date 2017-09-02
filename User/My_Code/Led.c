@@ -91,14 +91,32 @@ void Led_RGB_Test(void)
 {
 	while(1)
 	{
+		Led_BLUE1_CTRL(LED_ON);
+		Led_BLUE2_CTRL(LED_OFF);
+		Led_RGB_R_CTRL(LED_OFF);
+		Led_RGB_G_CTRL(LED_OFF);
+		Led_RGB_B_CTRL(LED_OFF);
+		Delay_ms(300);
+		Led_BLUE1_CTRL(LED_OFF);
+		Led_BLUE2_CTRL(LED_ON);
+		Led_RGB_R_CTRL(LED_OFF);
+		Led_RGB_G_CTRL(LED_OFF);
+		Led_RGB_B_CTRL(LED_OFF);
+		Delay_ms(300);
+		Led_BLUE1_CTRL(LED_OFF);
+		Led_BLUE2_CTRL(LED_OFF);
 		Led_RGB_R_CTRL(LED_ON);
 		Led_RGB_G_CTRL(LED_OFF);
 		Led_RGB_B_CTRL(LED_OFF);
 		Delay_ms(300);
+		Led_BLUE1_CTRL(LED_OFF);
+		Led_BLUE2_CTRL(LED_OFF);
 		Led_RGB_R_CTRL(LED_OFF);
 		Led_RGB_G_CTRL(LED_ON);
 		Led_RGB_B_CTRL(LED_OFF);
 		Delay_ms(300);
+		Led_BLUE1_CTRL(LED_OFF);
+		Led_BLUE2_CTRL(LED_OFF);
 		Led_RGB_R_CTRL(LED_OFF);
 		Led_RGB_G_CTRL(LED_OFF);
 		Led_RGB_B_CTRL(LED_ON);
