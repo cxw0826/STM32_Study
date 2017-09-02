@@ -1,6 +1,7 @@
 #include "stm32f10x.h"
 #include "Led.h"
 #include "Sys_Tick.h"
+#include "DMA_Uart.h"
 
 
 int main(void)
@@ -11,8 +12,10 @@ int main(void)
 	// 如果用户想修改系统时钟，可自行编写程序修改
 	Sys_Tick_Init();
 	Led_Init();
+	DMA_Uart_Init();
 	
-	Led_RGB_Test();
+	//Led_RGB_Test();
+	DMA_Uart_Test();
 		
 	while( 1 )
 	{

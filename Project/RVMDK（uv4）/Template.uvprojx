@@ -587,6 +587,11 @@
               <FileType>1</FileType>
               <FilePath>..\..\User\My_Code\Led.c</FilePath>
             </File>
+            <File>
+              <FileName>DMA_Uart.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\User\My_Code\DMA_Uart.c</FilePath>
+            </File>
           </Files>
         </Group>
       </Groups>
