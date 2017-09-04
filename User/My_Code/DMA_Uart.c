@@ -38,6 +38,11 @@ void Uartx_Config(void)
 	USART_Init(DMA_Uartx,&USART_InitStructure);
 	//使能串口1
 	USART_Cmd(DMA_Uartx,ENABLE);
+	//向DMA发出发送请求
+	USART_DMACmd(DMA_Uartx,USART_DMAReq_Tx,ENABLE);
+	
+	//TXE发送中断,TC传输完成中断,RXNE接收中断,PE奇偶错误中断,可以是多个     
+	USART_ITConfig(DMA_Uartx,USART_IT_RXNE,ENABLE);  
 }
 
 //初始化DMA相关参数函数
@@ -101,43 +106,48 @@ void DMA_Config(void)
 	DMA_InitStructure.DMA_Priority	=	DMA_Priority_High;
 	//初始化发送
 	DMA_Init(DMA_Uart_TX_Channel,&DMA_InitStructure);
+	
 
 	//使能DMA
-	DMA_Cmd(DMA_Uart_TX_Channel,ENABLE);
+	//DMA_Cmd(DMA_Uart_TX_Channel,ENABLE);
+	//允许DMA中断
+    DMA_ITConfig(DMA1_Channel4,DMA_IT_TC,ENABLE);
 }
 
-//DMA中断配置
-void DMA_NVIC_Config(void)  
-{  
-         NVIC_InitTypeDef NVIC_InitStructure;    
-          
-         //DMA优先级          
-         NVIC_PriorityGroupConfig(NVIC_PriorityGroup_3);  
-         NVIC_InitStructure.NVIC_IRQChannel= DMA1_Channel4_IRQn;   
-         NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority= 2;   
-         NVIC_InitStructure.NVIC_IRQChannelSubPriority= 1;   
-         NVIC_InitStructure.NVIC_IRQChannelCmd= ENABLE;   
-         NVIC_Init(&NVIC_InitStructure);   
-          
-          
-         /*Configure one bit for preemption priority -------------------------------- */  
-         NVIC_PriorityGroupConfig(NVIC_PriorityGroup_0);  
-          
-         /*UART1 -------------------------------------------------------------------- */  
-         NVIC_InitStructure.NVIC_IRQChannel= USART1_IRQn;  
-         NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority= 0;  
-         NVIC_InitStructure.NVIC_IRQChannelSubPriority= 1;  
-         NVIC_InitStructure.NVIC_IRQChannelCmd= ENABLE;  
-         NVIC_Init(&NVIC_InitStructure);     
-          
-}  
+void DMA_Nvic_Config(void)
+{
+	NVIC_InitTypeDef NVIC_InitStructure;
+	//配置UART1中断    
+	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_3);  
+	NVIC_InitStructure.NVIC_IRQChannel = USART1_IRQn;               //通道设置为串口1中断    
+	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 2;       //中断占先等级0    
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 1;              //中断响应优先级0    
+	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;                 //打开中断    
+	NVIC_Init(&NVIC_InitStructure);                                 //初始化 
+	
+    //DMA发送中断设置  
+	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_3);  
+    NVIC_InitStructure.NVIC_IRQChannel = DMA1_Channel4_IRQn;  
+    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 3;  
+    NVIC_InitStructure.NVIC_IRQChannelSubPriority = 2;  
+    NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;  
+    NVIC_Init(&NVIC_InitStructure); 
+	
+    //DMA接收中断设置  
+	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_3);  
+    NVIC_InitStructure.NVIC_IRQChannel = DMA1_Channel4_IRQn;  
+    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 4;  
+    NVIC_InitStructure.NVIC_IRQChannelSubPriority = 2;  
+    NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;  
+    NVIC_Init(&NVIC_InitStructure); 
+}
 
 //初始化程序入口
 void DMA_Uart_Init(void)
 {
 	Uartx_Config();
 	DMA_Config();
-	DMA_NVIC_Config();
+	DMA_Nvic_Config();
 }
 
 /*******************************************************************************
@@ -160,9 +170,9 @@ int fputc(int ch, FILE *f)
     return ch;
 }
 
-
 //串口DMA传输测试程序
-void DMA_Uart_Test(void)
+void DMA_TX_Uart_Test(void)
+
 {
 	u8	Data_Cnt = 0;
 	
@@ -171,41 +181,55 @@ void DMA_Uart_Test(void)
 	{
 		DMA_Uart_SendBuffer[Data_Cnt] = 0x30 + Data_Cnt;
 	}
-	//向DMA发出发送请求
-	printf("Start DMA:\r\n");
-	USART_DMACmd(DMA_Uartx,USART_DMAReq_Tx,ENABLE);
-	//normal模式下DMA传输完成后会自动关闭DMA通道
 	
+	printf("Start DMA1:\r\n");
+	//使能DMA通道
+	DMA_Cmd(DMA_Uart_TX_Channel,ENABLE);
+	//如果发送完成，关闭DMA通道
+	//while(DMA_GetFlagStatus(DMA1_FLAG_TC4) == RESET);
+	//DMA_Cmd(DMA_Uart_TX_Channel,DISABLE);
+
 	Delay_ms(500);
-	
+	Delay_ms(500);
 	//往SendBuffer填充数据
 	for(Data_Cnt=0;Data_Cnt<DMA_Uart_Buffer_Size;Data_Cnt++)
 	{
-		DMA_Uart_SendBuffer[Data_Cnt] = Data_Cnt;
+		DMA_Uart_SendBuffer[Data_Cnt] = 0x31 + Data_Cnt;
 	}
+	//设置传输数据长度  
+	DMA_SetCurrDataCounter(DMA_Uart_TX_Channel,DMA_Uart_Buffer_Size);
 	
 	//向DMA发出发送请求
 	printf("\r\n");
 	printf("Start DMA2:\r\n");
-	//normal模式下DMA传输完成后会自动关闭DMA通道,需要重新打开
+	//normal模式下DMA传输完成后要手动关闭DMA通道,需要重新打开
 	DMA_Cmd(DMA_Uart_TX_Channel,ENABLE);
-	USART_DMACmd(DMA_Uartx,USART_DMAReq_Tx,ENABLE);
 	
-	//如果发送完成，关闭DMA通道
 	while(1);
-	while(DMA_GetFlagStatus(DMA1_FLAG_TC4) != RESET)
-	{
-		DMA_Cmd(DMA_Uart_TX_Channel,DISABLE);
-	}
 }
 
+
 void DMA1_Channel4_IRQHandler(void)  
-{   
-          
-   //清除标志位  
-   DMA_ClearFlag(DMA1_FLAG_TC4);   
-   //关闭DMA   
-   DMA_Cmd(DMA1_Channel4,DISABLE);
-                    
+{ 
+	DMA_Cmd(DMA_Uart_TX_Channel,DISABLE);
+	DMA_ClearFlag(DMA1_FLAG_TC4);
+	//if(DMA_GetFlagStatus(DMA1_FLAG_TC4)==SET)
+	/*
+	if(0)
+	{
+        USART_DMACmd(USART1, USART_DMAReq_Tx, DISABLE);
+        USART_DMACmd(USART1, USART_DMAReq_Rx, ENABLE);
+		//清除标志位  
+		DMA_ClearFlag(DMA1_FLAG_TC4);
+		//关闭DMA   
+		DMA_Cmd(DMA1_Channel4,DISABLE);
+		DMA_Uart_TX_Flag = 1;
+	}     
+	*/
 }  
+
+void DMA1_Channel5_IRQHandler(void)
+{
+	
+}
 

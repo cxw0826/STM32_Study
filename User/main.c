@@ -15,7 +15,7 @@ int main(void)
 	DMA_Uart_Init();
 	
 	//Led_RGB_Test();
-	DMA_Uart_Test();
+	DMA_TX_Uart_Test();
 		
 	while( 1 )
 	{

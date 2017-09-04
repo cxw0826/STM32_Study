@@ -19,10 +19,10 @@
 #define DMA_Uart_TX_Channel			DMA1_Channel4
 #define DMA_Uart_RX_Channel			DMA1_Channel5
 //定义BUFFER大小
-#define DMA_Uart_Buffer_Size		200
+#define DMA_Uart_Buffer_Size		10
 
 void DMA_Uart_Init(void);
-void DMA_Uart_Test(void);
+void DMA_TX_Uart_Test(void);
 
 
 
