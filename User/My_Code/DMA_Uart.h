@@ -2,13 +2,14 @@
 #define _DMA_UART_H_
 
 #include "stm32f10x.h"
-//#include <stdio.h>
+#include <stdio.h>
+#include "Sys_Tick.h"
 
 //定义串口和DMA相关参数
 #define DMA_Uart_Baud_Rate			115200
 #define DMA_Uartx					USART1
 #define DMA_Uart_Func_CLK			RCC_APB2Periph_USART1
-#define DMA_Uart_IO_CLK				RCC_APB2Periph_GPIOA
+#define DMA_Uart_IO_CLK				(RCC_APB2Periph_GPIOA | RCC_APB2Periph_AFIO)
 #define DMA_Uart_Port				GPIOA
 #define DMA_Uart_RX_Pin				GPIO_Pin_10
 #define DMA_Uart_TX_Pin				GPIO_Pin_9

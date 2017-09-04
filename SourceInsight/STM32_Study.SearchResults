@@ -1,3 +1,0 @@
----- USART_DMAReq_Tx Matches (2 in 2 files) ----
-Stm32f10x_usart.c (d:\workstation\gitstation\stm32_study\libraries\fwlib\src):  *     @arg USART_DMAReq_Tx: USART DMA transmit request
-Stm32f10x_usart.h (d:\workstation\gitstation\stm32_study\libraries\fwlib\inc):#define USART_DMAReq_Tx                      ((uint16_t)0x0080)
