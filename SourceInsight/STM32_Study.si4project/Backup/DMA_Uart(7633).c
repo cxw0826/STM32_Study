@@ -42,7 +42,7 @@ void Uartx_Config(void)
 	USART_DMACmd(DMA_Uartx,USART_DMAReq_Tx,ENABLE);
 	
 	//TXE发送中断,TC传输完成中断,RXNE接收中断,PE奇偶错误中断,可以是多个     
-	USART_ITConfig(DMA_Uartx,USART_IT_RXNE | USART_IT_IDLE,ENABLE);  
+	USART_ITConfig(DMA_Uartx,USART_IT_RXNE,ENABLE);  
 }
 
 //初始化DMA相关参数函数
@@ -65,8 +65,7 @@ void DMA_Config(void)
 	//内存地址自增
 	DMA_InitStructure.DMA_MemoryInc		=	DMA_MemoryInc_Enable;
 	//DMA模式，不断循环
-	//DMA_InitStructure.DMA_Mode			=	DMA_Mode_Circular;
-	DMA_InitStructure.DMA_Mode			=	DMA_Mode_Normal;
+	DMA_InitStructure.DMA_Mode			=	DMA_Mode_Circular;
 	//外设(串口)基地址
 	DMA_InitStructure.DMA_PeripheralBaseAddr = (u32)(&(DMA_Uartx->DR));
 	//外设(串口)传输数据单元为字节
@@ -79,8 +78,6 @@ void DMA_Config(void)
 	DMA_Init(DMA_Uart_RX_Channel,&DMA_InitStructure);
 	//使能DMA
 	DMA_Cmd(DMA_Uart_RX_Channel,ENABLE);
-	//允许DMA中断
-    //DMA_ITConfig(DMA1_Channel5,DMA_IT_TC,ENABLE);
 
 	
 	//再初始化TX通道
@@ -138,7 +135,7 @@ void DMA_Nvic_Config(void)
 	
     //DMA接收中断设置  
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_3);  
-    NVIC_InitStructure.NVIC_IRQChannel = DMA1_Channel5_IRQn;  
+    NVIC_InitStructure.NVIC_IRQChannel = DMA1_Channel4_IRQn;  
     NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 4;  
     NVIC_InitStructure.NVIC_IRQChannelSubPriority = 2;  
     NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;  
@@ -211,15 +208,11 @@ void DMA_TX_Uart_Test(void)
 	while(1);
 }
 
-//DMA发送中断处理函数
+
 void DMA1_Channel4_IRQHandler(void)  
 { 
-	//先关闭DMA发送通道
 	DMA_Cmd(DMA_Uart_TX_Channel,DISABLE);
-	//清除标志位
 	DMA_ClearFlag(DMA1_FLAG_TC4);
-	//重新设置传输数据长度  
-	DMA_SetCurrDataCounter(DMA_Uart_TX_Channel,DMA_Uart_Buffer_Size);
 	//if(DMA_GetFlagStatus(DMA1_FLAG_TC4)==SET)
 	/*
 	if(0)
@@ -234,46 +227,6 @@ void DMA1_Channel4_IRQHandler(void)
 	}     
 	*/
 }  
-
-u8 DMA_Uart_Recv_Data_Process_Finish = 0;
-
-
-//串口1接收中断处理函数
-//主要处理空闲中断后，Rbuff数据copy到Tbuff
-void USART1_IRQHandler(void)
-{
-	//如果收到了空闲中断，说明串口传输已经完成
-	if(USART_GetFlagStatus(DMA_Uartx, USART_IT_IDLE) != RESET)
-	{
-		//将RxBuffer数据拷贝到TxBuffer
-		memcpy(DMA_Uart_SendBuffer,DMA_Uart_RecevBuffer,sizeof(DMA_Uart_SendBuffer));
-		//清除中断标志
-		USART_ClearFlag(DMA_Uartx,USART_FLAG_IDLE | USART_FLAG_RXNE);
-		//关闭串口接收DMA通道，防止后续的接收覆盖buff
-		DMA_Cmd(DMA_Uart_RX_Channel, DISABLE);
-		//清除DMA 接收中断标志
-		DMA_ClearFlag( DMA1_FLAG_GL5 );
-		//重新设置接收buffer大小
-		DMA_SetCurrDataCounter(DMA_Uart_RX_Channel,DMA_Uart_Buffer_Size);
-		//给出数据接收处理完毕信号
-		DMA_Uart_Recv_Data_Process_Finish = 1;
-	}
-}
-
-//串口接收后发送测试函数
-void DMA_Uart_Recv_Send_Test(void)
-{
-	while(1)
-	{
-		//是否接收完毕
-		if(DMA_Uart_Recv_Data_Process_Finish)
-		{
-			DMA_Uart_Recv_Data_Process_Finish = 0;
-			//接收完毕后打开DMA发送通道即可
-			DMA_Cmd(DMA_Uart_TX_Channel,ENABLE);
-		}
-	}
-}
 
 void DMA1_Channel5_IRQHandler(void)
 {

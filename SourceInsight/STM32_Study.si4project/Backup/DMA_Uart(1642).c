@@ -80,7 +80,7 @@ void DMA_Config(void)
 	//使能DMA
 	DMA_Cmd(DMA_Uart_RX_Channel,ENABLE);
 	//允许DMA中断
-    //DMA_ITConfig(DMA1_Channel5,DMA_IT_TC,ENABLE);
+    DMA_ITConfig(DMA1_Channel5,DMA_IT_TC,ENABLE);
 
 	
 	//再初始化TX通道
@@ -237,7 +237,6 @@ void DMA1_Channel4_IRQHandler(void)
 
 u8 DMA_Uart_Recv_Data_Process_Finish = 0;
 
-
 //串口1接收中断处理函数
 //主要处理空闲中断后，Rbuff数据copy到Tbuff
 void USART1_IRQHandler(void)
@@ -248,7 +247,7 @@ void USART1_IRQHandler(void)
 		//将RxBuffer数据拷贝到TxBuffer
 		memcpy(DMA_Uart_SendBuffer,DMA_Uart_RecevBuffer,sizeof(DMA_Uart_SendBuffer));
 		//清除中断标志
-		USART_ClearFlag(DMA_Uartx,USART_FLAG_IDLE | USART_FLAG_RXNE);
+		USART_ClearFlag(DMA_Uartx,USART_FLAG_IDLE);
 		//关闭串口接收DMA通道，防止后续的接收覆盖buff
 		DMA_Cmd(DMA_Uart_RX_Channel, DISABLE);
 		//清除DMA 接收中断标志

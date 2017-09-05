@@ -3,7 +3,6 @@
 
 #include "stm32f10x.h"
 #include <stdio.h>
-#include <string.h>
 #include "Sys_Tick.h"
 
 //定义串口和DMA相关参数
@@ -24,7 +23,6 @@
 
 void DMA_Uart_Init(void);
 void DMA_TX_Uart_Test(void);
-void DMA_Uart_Recv_Send_Test(void);
 
 
 
