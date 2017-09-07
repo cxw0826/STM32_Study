@@ -2,6 +2,7 @@
 #include "Led.h"
 #include "Sys_Tick.h"
 #include "DMA_Uart.h"
+#include "Spi_Flash.h"
 
 
 int main(void)
@@ -13,10 +14,13 @@ int main(void)
 	Sys_Tick_Init();
 	Led_Init();
 	DMA_Uart_Init();
+	Spi_Flash_Init();
 	
 	//Led_RGB_Test();
 	//DMA_TX_Uart_Test();
-	DMA_Uart_Recv_Send_Test();
+	//DMA_Uart_Recv_Send_Test();
+	printf("SPI∂¡ID≤‚ ‘!\r\n");
+	Spi_Flash_Read_W25Q64_JEDEC_ID();
 		
 	while( 1 )
 	{
