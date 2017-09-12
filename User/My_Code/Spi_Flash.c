@@ -192,6 +192,7 @@ void Spi_Flash_Write_Page(u32 Addr,u8 *Data,u32 NumOfByte)
 	//避免写操作覆盖前面的数据
 	if(NumOfByte>W25Q64_PAGE_SIZE)
 	{
+		//一页有256BYTES，如果要写的大于256BYTE，就设置最大写256BYTE
 		NumOfByte = W25Q64_PAGE_SIZE;
 	}
 	Spi_Flash_Cs_Enable();
@@ -219,6 +220,40 @@ void Spi_Flash_Write_Buffer(u32 ADDR,u8 *DATA,u32 NumOfByte)
 	u8 NumOfSingleData = 0;
 	//页地址
 	u8 PageAddr = 0;
+	//总共要写多少页
+	u8 PageTotalCnt = 0;
+	//中间变量
+	u8 CntTmp = 0;
+
+	//W25Q64一个存储地址是1个BYTE
+	PageAddr = ADDR % W25Q64_PAGE_SIZE;
+	PageTotalCnt = W25Q64_PAGE_SIZE - PageAddr;
+	NumOfPage = NumOfByte / W25Q64_PAGE_SIZE;
+	NumOfSingleData = NumOfByte % W25Q64_PAGE_SIZE;
+
+	//如果起始地址是页的整数倍
+	if(PageAddr == 0)
+	{
+		//写入数据不够1页
+		if(NumOfPage == 0)
+		{
+			Spi_Flash_Write_Page(PageAddr, DATA, NumOfByte);
+		}
+		//写入数据超过1页
+		else
+		{
+			while(NumOfPage--)
+			{
+				Spi_Flash_Write_Page(PageAddr, DATA, NumOfByte);
+				PageAddr = PageAddr + W25Q64_PAGE_SIZE;
+				DATA = DATA + W25Q64_PAGE_SIZE;
+			}
+		}
+	}
+	else
+	{
+		
+	}
 	
 }
 
