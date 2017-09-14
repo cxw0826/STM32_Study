@@ -5,14 +5,10 @@ void Spi_Flash_Init(void)
 {
 	GPIO_InitTypeDef	GPIO_InitStructure;
 	SPI_InitTypeDef		SPI_InitStructure;
-
-	//先初始化GPIO相关引脚
-	//功能复用的，打开时钟
-	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA,ENABLE);
 	
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA,ENABLE);
 	//NSS引脚初始化要是OUT_PP,否则会出错
 	GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_Out_PP;
-	
 	GPIO_InitStructure.GPIO_Pin	  = W25Q64_SPI_NSS;
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_Init(W25Q64_SPI_Port,&GPIO_InitStructure);
@@ -128,35 +124,6 @@ void Spi_Flash_Read_ID2(void)
 	printf("设备的Device_ID是:%x\r\n",Device_ID);
 	while(1);
 }
-//向设备连续读数据
-//测试结果不对
-void Spi_Flash_Read_Data(u16 *buffer,u32 Device_Addr,u32 Data_Len)
-{
-	u32	Data_Cnt;
-	Spi_Flash_Wait_Instruction_End();
-	printf("开始连续读取\r\n");
-	//先拉低cs
-	Spi_Flash_Cs_Enable();
-	//发送读指令寄存器03H
-	Spi_Flash_SendByte(W25Q64_READ_DATA);
-	//跟着发送地址从高到低
-	Spi_Flash_SendByte((Device_Addr & 0xFF000000)>>24);
-	Spi_Flash_SendByte((Device_Addr & 0xFF0000)>>16);
-	Spi_Flash_SendByte((Device_Addr & 0xFF00)>>8);
-	Spi_Flash_SendByte( Device_Addr & 0xFF);
-	for(Data_Cnt=0;Data_Cnt<Data_Len;Data_Cnt++)
-	{
-		//带星号是地址空间
-		*buffer = W25Q64_SPIX->DR;
-		//不带信号是地址
-		buffer++;
-	}
-	//拉高cs
-	Spi_Flash_Cs_Disable();
-	Spi_Flash_Wait_Instruction_End();
-	//读取完毕
-	printf("连续读取完毕\r\n");
-}
 //先去除DEVICE写保护
 void Spi_Flash_Write_Enable(void)
 {
@@ -165,13 +132,13 @@ void Spi_Flash_Write_Enable(void)
 	//写入写不保护指令
 	Spi_Flash_SendByte(W25Q64_WRITE_ENABLE);
 	//拉高cs
-	Spi_Flash_Cs_Enable();
+	Spi_Flash_Cs_Disable();
 }
 //擦除一个sector
 void Spi_Flash_Erase_Sector(u32 Sector_Num)
 {
-	Spi_Flash_Wait_Instruction_End();
 	Spi_Flash_Write_Enable();
+	Spi_Flash_Wait_Instruction_End();
 	Spi_Flash_Cs_Enable();
 	//写入sector擦除指令
 	Spi_Flash_SendByte(W25Q64_SECTOR_ERASE_CMD);
@@ -188,6 +155,7 @@ void Spi_Flash_Erase_Sector(u32 Sector_Num)
 void Spi_Flash_Write_Page(u32 Addr,u8 *Data,u32 NumOfByte)
 {
 	Spi_Flash_Wait_Instruction_End();
+	Spi_Flash_Write_Enable();
 	//判断是否超出了写范围
 	//避免写操作覆盖前面的数据
 	if(NumOfByte>W25Q64_PAGE_SIZE)
@@ -227,6 +195,7 @@ void Spi_Flash_Write_Buffer(u32 ADDR,u8 *DATA,u32 NumOfByte)
 
 	//W25Q64一个存储地址是1个BYTE
 	PageAddr = ADDR % W25Q64_PAGE_SIZE;
+	//开始写的那一页还剩多少空间
 	PageTotalCnt = W25Q64_PAGE_SIZE - PageAddr;
 	NumOfPage = NumOfByte / W25Q64_PAGE_SIZE;
 	NumOfSingleData = NumOfByte % W25Q64_PAGE_SIZE;
@@ -242,21 +211,115 @@ void Spi_Flash_Write_Buffer(u32 ADDR,u8 *DATA,u32 NumOfByte)
 		//写入数据超过1页
 		else
 		{
+			//先写整数页
 			while(NumOfPage--)
 			{
 				Spi_Flash_Write_Page(PageAddr, DATA, NumOfByte);
 				PageAddr = PageAddr + W25Q64_PAGE_SIZE;
 				DATA = DATA + W25Q64_PAGE_SIZE;
 			}
+			//再写剩下的单个数据
+			Spi_Flash_Write_Page(PageAddr, DATA, NumOfSingleData);
 		}
 	}
+	//如果写入的地址是不对齐的
 	else
 	{
-		
+		//如果要写入的数据不够一页
+		if(NumOfPage == 0)
+		{
+			//判断要写入的数据是否超出一页剩下的空间
+			if(NumOfSingleData > PageTotalCnt)
+			{
+				//缓存一页写不完的数据
+				CntTmp = NumOfSingleData - PageTotalCnt;
+				//写一页剩下的空间
+				Spi_Flash_Write_Page(PageAddr, DATA, PageTotalCnt);
+				//地址指向下一页起始
+				PageAddr = PageAddr + PageTotalCnt;
+				//数据指向下一页起始
+				DATA = DATA + PageTotalCnt;
+				//在下一页中写剩下的内容
+				Spi_Flash_Write_Page(PageAddr, DATA, CntTmp);
+			}
+			//如果要写的数据这一页够装，就直接写
+			else
+			{
+				Spi_Flash_Write_Page(PageAddr, DATA, NumOfByte);
+			}
+		}
+		//如果写超过1页
+		else
+		{
+			//先计算不对齐的部分数据
+			NumOfByte = NumOfByte - PageTotalCnt;
+			//再计算一共还剩多少页
+			NumOfPage = NumOfByte / W25Q64_PAGE_SIZE;
+			//再计算还剩多少个单个数据
+			NumOfSingleData = NumOfPage / W25Q64_PAGE_SIZE;
+			//先写不对齐的数据
+			Spi_Flash_Write_Page(ADDR, DATA, PageTotalCnt);
+			//地址指向下一页
+			ADDR = ADDR + PageTotalCnt;
+			//数据指向下一页
+			DATA = DATA + PageTotalCnt;
+			//循环写入整数页数据
+			while(NumOfPage--)
+			{
+				Spi_Flash_Write_Page(ADDR, DATA, PageTotalCnt);
+				//地址指向下一页
+				ADDR = ADDR + W25Q64_PAGE_SIZE;
+				//数据指向下一页
+				DATA = DATA + W25Q64_PAGE_SIZE;
+			}
+			//再判断是否还有单个的数据
+			if(NumOfSingleData != 0)
+			{
+				Spi_Flash_Write_Page(ADDR, DATA, NumOfSingleData);
+			}
+		}
 	}
-	
+}
+//读buffer函数
+void Spi_Flash_Read_Buffer(u32 ADDR,u8 *DATA,u32 NumOfRead)
+{
+	Spi_Flash_Wait_Instruction_End();
+	Spi_Flash_Cs_Enable();
+	Spi_Flash_SendByte(W25Q64_READ_DATA);
+	Spi_Flash_SendByte((ADDR & 0xFF0000)>>16);
+	Spi_Flash_SendByte((ADDR & 0xFF00)>>8);
+	Spi_Flash_SendByte( ADDR & 0xFF);
+	while(NumOfRead--)
+	{
+		*DATA = Spi_Flash_SendByte(DummyByte);
+		DATA++;
+	}
+	Spi_Flash_Cs_Disable();
+	Spi_Flash_Wait_Instruction_End();
 }
 
+u8 Spi_Flash_TxBuffer[] = "This is a flash test program!";
+u8 Spi_Flash_RxBuffer[RxBufferSize];
 
+//SPI_FLASH测试函数
+void Spi_Flash_Test(void)
+{
+	u32 Spi_Print_Cnt;
+	printf("SPI读ID测试!\r\n");
+	Spi_Flash_Read_JEDEC_ID();
+	printf("spi页擦除\r\n");
+	Spi_Flash_Erase_Sector(W25Q64_MEMORY_SECTOR_0);
+	printf("spi写buffer\r\n");
+	Spi_Flash_Write_Buffer(W25Q64_MEMORY_SECTOR_0,Spi_Flash_TxBuffer,RxBufferSize);
+	printf("写入的数据为：%s \r\n", Spi_Flash_TxBuffer);
+	Spi_Flash_Read_Buffer(W25Q64_MEMORY_SECTOR_0,Spi_Flash_RxBuffer,RxBufferSize);
+	printf("SPI读出来的数据是：\r\n");
+	for(Spi_Print_Cnt=0;Spi_Print_Cnt<RxBufferSize;Spi_Print_Cnt++)
+	{
+		printf("%c",Spi_Flash_RxBuffer[Spi_Print_Cnt]);
+	}
+	printf("\r\n");
+	printf("打印完毕，SPI测试完毕!\r\n");
+}
 
 

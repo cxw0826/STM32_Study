@@ -6,6 +6,7 @@
 
 //spi相关引脚定义
 #define W25Q64_SPI_Port		GPIOA
+
 #define W25Q64_SPI_NSS		GPIO_Pin_4
 #define W25Q64_SPI_SCK		GPIO_Pin_5
 #define W25Q64_SPI_MISO		GPIO_Pin_6
@@ -13,12 +14,15 @@
 //原理图用的是SPI1
 #define	W25Q64_SPIX			SPI1
 //CS控制信号函数
-#define Spi_Flash_Cs_Enable() GPIO_ResetBits(W25Q64_SPI_Port,W25Q64_SPI_NSS);
-#define Spi_Flash_Cs_Disable() GPIO_SetBits(W25Q64_SPI_Port,W25Q64_SPI_NSS);
+#define Spi_Flash_Cs_Enable() GPIO_ResetBits(W25Q64_SPI_Port,W25Q64_SPI_NSS)
+#define Spi_Flash_Cs_Disable() GPIO_SetBits(W25Q64_SPI_Port,W25Q64_SPI_NSS)
 //定义相关操作参数
 #define DummyByte 			0xFF
 #define W25Q64_WIP_FLAG		0x01
 #define	W25Q64_PAGE_SIZE	256
+#define  countof(a)      (sizeof(a) / sizeof(*(a)))
+#define  RxBufferSize (countof(Spi_Flash_TxBuffer)-1)
+
 //W25Q64设备ID号存放寄存器
 //byte1为读地址，byte2为manufacture ID
 //byte3为memory type
@@ -53,7 +57,9 @@
 void Spi_Flash_Init(void);
 void Spi_Flash_Read_JEDEC_ID(void);
 void Spi_Flash_Erase_Sector(u32 Sector_Num);
-void Spi_Flash_Read_Data(u16 *buffer,u32 Device_Addr,u32 Data_Len);
+void Spi_Flash_Write_Buffer(u32 ADDR, u8 * DATA, u32 NumOfByte);
+void Spi_Flash_Read_Buffer(u32 ADDR,u8 *DATA,u32 NumOfRead);
+void Spi_Flash_Test(void);
 
 
 
