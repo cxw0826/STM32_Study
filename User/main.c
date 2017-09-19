@@ -12,7 +12,7 @@ int main(void)
 	// 如果用户想修改系统时钟，可自行编写程序修改
 	
 	// 数组值不能写1024，会内存溢出
-	//u16 Spi_Flash_Read_Buffer[10];
+	// u16 Spi_Flash_Read_Buffer[10];
 	
 	Sys_Tick_Init();
 	Led_Init();
