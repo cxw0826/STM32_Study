@@ -1,5 +1,7 @@
 #include "Spi_Flash.h"
 
+static volatile DSTATUS fatFs_Spi_Flash_Stat = STA_NOINIT;	/* Physical drive status */
+
 //初始化引脚和SPI功能
 void Spi_Flash_Init(void)
 {
@@ -50,7 +52,7 @@ void Spi_Flash_Init(void)
 }
 
 //向设备发送一个字节
-u8 Spi_Flash_SendByte(u8 Byte)
+u8 Spi_Flash_SendByte(const BYTE Byte)
 {
 	//先判断是否发送完成
 	while(SPI_I2S_GetFlagStatus(W25Q64_SPIX,SPI_I2S_FLAG_TXE) == RESET);
@@ -105,6 +107,34 @@ void Spi_Flash_Wait_Instruction_End(void)
 	while ((Instruction_State & W25Q64_WIP_FLAG) == SET);
 	Spi_Flash_Cs_Disable();
 }
+//读全ID
+u32 Spi_Flash_Read_ID1(void)
+{
+  u32 Temp = 0, Temp0 = 0, Temp1 = 0, Temp2 = 0;
+
+  /* Select the FLASH: Chip Select low */
+  Spi_Flash_Cs_Enable();
+
+  /* Send "RDID " instruction */
+  Spi_Flash_SendByte(W25Q64_JEDECID_REG);
+
+  /* Read a byte from the FLASH */
+  Temp0 = Spi_Flash_ReadByte();
+
+  /* Read a byte from the FLASH */
+  Temp1 = Spi_Flash_ReadByte();
+
+  /* Read a byte from the FLASH */
+  Temp2 = Spi_Flash_ReadByte();
+
+  /* Deselect the FLASH: Chip Select high */
+  Spi_Flash_Cs_Disable();
+
+  Temp = (Temp0 << 16) | (Temp1 << 8) | Temp2;
+
+  return Temp;
+}
+
 //读另外一个寄存器中的deviceID
 void Spi_Flash_Read_ID2(void)
 {
@@ -152,7 +182,7 @@ void Spi_Flash_Erase_Sector(u32 Sector_Num)
 	Spi_Flash_Wait_Instruction_End();
 }
 //写页函数
-void Spi_Flash_Write_Page(u32 Addr,u8 *Data,u32 NumOfByte)
+void Spi_Flash_Write_Page(u32 Addr,const BYTE  *Data,u32 NumOfByte)
 {
 	Spi_Flash_Wait_Instruction_End();
 	Spi_Flash_Write_Enable();
@@ -180,7 +210,7 @@ void Spi_Flash_Write_Page(u32 Addr,u8 *Data,u32 NumOfByte)
 	Spi_Flash_Wait_Instruction_End();
 }
 //写BUFFER数据
-void Spi_Flash_Write_Buffer(u32 ADDR,u8 *DATA,u32 NumOfByte)
+void Spi_Flash_Write_Buffer(const BYTE *DATA,DWORD ADDR,UINT NumOfByte)
 {
 	//数据一共有多少页
 	u8 NumOfPage = 0;
@@ -281,7 +311,7 @@ void Spi_Flash_Write_Buffer(u32 ADDR,u8 *DATA,u32 NumOfByte)
 	}
 }
 //读buffer函数
-void Spi_Flash_Read_Buffer(u32 ADDR,u8 *DATA,u32 NumOfRead)
+void Spi_Flash_Read_Buffer(BYTE *DATA,DWORD ADDR,UINT NumOfRead)
 {
 	Spi_Flash_Wait_Instruction_End();
 	Spi_Flash_Cs_Enable();
@@ -302,6 +332,7 @@ u8 Spi_Flash_TxBuffer[] = "This is a flash test program!";
 u8 Spi_Flash_RxBuffer[RxBufferSize];
 
 //SPI_FLASH测试函数
+/*
 void Spi_Flash_Test(void)
 {
 	u32 Spi_Print_Cnt;
@@ -310,9 +341,9 @@ void Spi_Flash_Test(void)
 	printf("spi页擦除\r\n");
 	Spi_Flash_Erase_Sector(W25Q64_MEMORY_SECTOR_0);
 	printf("spi写buffer\r\n");
-	Spi_Flash_Write_Buffer(W25Q64_MEMORY_SECTOR_0,Spi_Flash_TxBuffer,RxBufferSize);
+	Spi_Flash_Write_Buffer(Spi_Flash_TxBuffer,W25Q64_MEMORY_SECTOR_0,RxBufferSize);
 	printf("写入的数据为：%s \r\n", Spi_Flash_TxBuffer);
-	Spi_Flash_Read_Buffer(W25Q64_MEMORY_SECTOR_0,Spi_Flash_RxBuffer,RxBufferSize);
+	Spi_Flash_Read_Buffer(Spi_Flash_RxBuffer,W25Q64_MEMORY_SECTOR_0,RxBufferSize);
 	printf("SPI读出来的数据是：\r\n");
 	for(Spi_Print_Cnt=0;Spi_Print_Cnt<RxBufferSize;Spi_Print_Cnt++)
 	{
@@ -321,5 +352,126 @@ void Spi_Flash_Test(void)
 	printf("\r\n");
 	printf("打印完毕，SPI测试完毕!\r\n");
 }
+*/
+//----------------------------------------------------------
+//下面函数是FATFS文件系统接口函数
+//
+//
+//----------------------------------------------------------
+//文件系统初始化函数
+DSTATUS fatFs_Spi_Flash_Init(void)
+{
+	Spi_Flash_Init();
+	if(W25Q64_FLASH_ID == Spi_Flash_Read_ID1())
+	{
+		return fatFs_Spi_Flash_Stat &= ~STA_NOINIT;
+	}
+	else
+	{
+		return fatFs_Spi_Flash_Stat |=  STA_NOINIT;
+	}
+}
+//文件系统查询状态函数
+DSTATUS fatFs_Spi_Flash_Status(void)
+{
+	if(W25Q64_FLASH_ID == Spi_Flash_Read_ID1())
+	{
+		return fatFs_Spi_Flash_Stat &= ~STA_NOINIT;
+	}
+	else
+	{
+		return fatFs_Spi_Flash_Stat |=  STA_NOINIT;
+	}
+}
+//文件系统IO控制函数
+DRESULT fatFs_Spi_Flash_Ioctl(BYTE cmd,char *buff)
+{
+	switch (cmd)
+	{
+		case GET_SECTOR_SIZE:
+			*(WORD * )buff = 4096;		//flash最小写单元为页，256字节，此处取2页为一个读写单位
+			break;
+		case GET_BLOCK_SIZE:
+			*(DWORD * )buff = 1;		//flash以4k为最小擦除单位
+			break;
+		case GET_SECTOR_COUNT:
+			*(DWORD * )buff = 1536;		//sector数量
+			break;
+		case CTRL_SYNC:
+			break;
+		default:
+			break;
+	}
+	
+	return RES_OK;
+}
+//文件系统读接口
+DRESULT fatFs_Spi_Flash_Read(BYTE *buff, DWORD sector, UINT count)
+{
+	if ((fatFs_Spi_Flash_Stat & STA_NOINIT)) {
+		return RES_NOTRDY;
+	}
+	sector+=512;//扇区偏移，外部Flash文件系统空间放在外部Flash后面6M空间
+	Spi_Flash_Read_Buffer(buff, sector << 12, count<<12);
+	
+	return RES_OK;
+}
+//文件系统写接口
+DRESULT fatFs_Spi_Flash_Write(const BYTE *buff, DWORD sector, UINT count)
+{
+	uint32_t write_addr;  
+	sector+=512;//扇区偏移，外部Flash文件系统空间放在外部Flash后面6M空间
+	write_addr = sector<<12;    
+	Spi_Flash_Erase_Sector(write_addr);
+	Spi_Flash_Write_Buffer(buff,write_addr,4096);
+	return RES_OK;
+}
+//文件系统测试函数
+FIL fnew;													/* file objects */
+FATFS fs;													/* Work area (file system object) for logical drives */
+FRESULT res_flash; 
+UINT br, bw;            					/* File R/W count */
+BYTE buffer[1024]={0};       		  /* file copy buffer */
+BYTE textFileBuffer[] = "陈兴旺的简单文件系统移植！\r\n";
+BYTE work[4096]; /* Work area (larger is better for processing time) */
+
+
+void fatFs_Spi_Flash_Test(void)
+{
+	printf("This is a fatfs test demo \r\n");
+	//在外部Flash挂载文件系统
+	res_flash = f_mount(&fs,"0:",1);
+	printf("f_mount res_flash=%d \r\n",res_flash);
+	//如果没有文件系统就格式化创建创建文件系统
+	if(res_flash ==FR_NO_FILESYSTEM)
+	{
+		res_flash=f_mkfs("0:",0,4096,work,sizeof(work));							//格式化
+		printf("\r\nmkfs res_flash=%d",res_flash);
+		res_flash = f_mount(&fs,"0:",0);						//格式化后，先取消挂载
+		res_flash = f_mount(&fs,"0:",1);						//重新挂载
+	}
+	//文件系统测试，写测试
+	//打开文件，如果文件不参加则创建它
+	res_flash = f_open(&fnew, "0:flashnewfile.txt", FA_CREATE_ALWAYS | FA_WRITE );
+	
+	if ( res_flash == FR_OK )
+	{
+		res_flash = f_write(&fnew, textFileBuffer, sizeof(textFileBuffer), &bw);
+		f_close(&fnew);      
+	}
+	//读测试
+	res_flash = f_open(&fnew, "0:flashnewfile.txt", FA_OPEN_EXISTING | FA_READ); 	 
+	res_flash = f_read(&fnew, buffer, sizeof(buffer), &br); 
+	printf("\r\n %s ", buffer);
+	/* Close open files */
+	res_flash = f_close(&fnew);	
+	//不再使用文件系统，取消挂载文件系统
+	res_flash = f_mount(&fs,"0:",0);
+	
+	printf("fatFs_Spi_Flash_Test Success! \r\n");
+	 
+}
+
+
 
 
