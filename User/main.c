@@ -3,6 +3,7 @@
 #include "Sys_Tick.h"
 #include "DMA_Uart.h"
 #include "Spi_Flash.h"
+#include "fatFs_Spi_Flash_API.h"
 
 int main(void)
 {	

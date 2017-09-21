@@ -60,7 +60,10 @@
 
 void Spi_Flash_Init(void);
 void Spi_Flash_Read_JEDEC_ID(void);
+u32 Spi_Flash_Read_ID1(void);
 void Spi_Flash_Erase_Sector(u32 Sector_Num);
+void Spi_Flash_Write_Buffer(const BYTE *DATA,DWORD ADDR,UINT NumOfByte);
+void Spi_Flash_Read_Buffer(BYTE *DATA,DWORD ADDR,UINT NumOfRead);
 //void Spi_Flash_Write_Buffer(u32 ADDR, u8 * DATA, u32 NumOfByte);
 //void Spi_Flash_Read_Buffer(u32 ADDR,u8 *DATA,u32 NumOfRead);
 //void Spi_Flash_Test(void);

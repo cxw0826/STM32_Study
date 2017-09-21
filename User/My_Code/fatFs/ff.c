@@ -254,6 +254,11 @@ typedef struct {
 } FILESEM;
 #endif
 
+DWORD get_fattime (void)
+{
+	return 0;
+}
+
 
 /* SBCS up-case tables (\x80-\xFF) */
 #define TBL_CT437  {0x80,0x9A,0x45,0x41,0x8E,0x41,0x8F,0x80,0x45,0x45,0x45,0x49,0x49,0x49,0x8E,0x8F, \
@@ -5322,7 +5327,8 @@ FRESULT f_forward (
 
 
 
-#if FF_USE_MKFS && !FF_FS_READONLY
+//#if FF_USE_MKFS && !FF_FS_READONLY
+#if 1
 /*-----------------------------------------------------------------------*/
 /* Create an FAT/exFAT volume                                            */
 /*-----------------------------------------------------------------------*/

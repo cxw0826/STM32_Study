@@ -6,7 +6,6 @@
 /* This is an example of glue functions to attach various exsisting      */
 /* storage control modules to the FatFs module with a defined API.       */
 /*-----------------------------------------------------------------------*/
-#include "Spi_Flash.h"
 
 #include "diskio.h"		/* FatFs lower layer API */
 
