@@ -5,7 +5,7 @@ void Led_RGB_R_CTRL(u32 state)
 {
 	if(state == LED_ON)
 	{
-		GPIO_ResetBits(LED_RGB_PORT,LED_R_PIN);
+		GPIO_ResetBits(LED_RGB_PORT,LED_R_PIN);//
 	}
 	else
 	{
