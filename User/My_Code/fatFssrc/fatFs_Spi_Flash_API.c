@@ -1,83 +1,104 @@
 #include "fatFs_Spi_Flash_API.h"
-static volatile DSTATUS fatFs_Spi_Flash_Stat = STA_NOINIT;	/* Physical drive status */
+//文件系统测试函数
+FATFS	Spi_Fs;
+FIL		Spi_File;
+FRESULT	Spi_Fr_Res;
 
-//SPI_FLASH测试函数
+void Spi_File_W_R_Test(void);
 
-//----------------------------------------------------------
-//下面函数是FATFS文件系统接口函数
-//
-//
-//----------------------------------------------------------
-//文件系统初始化函数
-DSTATUS fatFs_Spi_Flash_Init(void)
+//测试挂载和格式化
+void Spi_Fs_Test(void)
 {
-	Spi_Flash_Init();
-	if(W25Q64_FLASH_ID == Spi_Flash_Read_ID1())
+	printf(">这是一个SPI文件系统测试函数!\r\n");
+	Spi_Fr_Res = f_mount(&Spi_Fs,"0:", 1);
+	if (Spi_Fr_Res == FR_NO_FILESYSTEM)
 	{
-		printf("W25Q64_FLASH_ID == Spi_Flash_Read_ID1()\r\n");
-		return fatFs_Spi_Flash_Stat &= ~STA_NOINIT;
+		printf(">没有文件系统，格式化!\r\n");
+		Spi_Fr_Res = f_mkfs("0:",0,4096);
+		if (Spi_Fr_Res == FR_OK)
+		{
+			printf(">格式化成功！\r\n");
+		}
+		//取消挂载
+		//Spi_Fr_Res = f_mount(&Spi_Fs,"0:", 0);
+		Spi_Fr_Res = f_mount(NULL,"0:", 1);
+		Delay_ms(10);
+		Spi_Fr_Res = f_mount(&Spi_Fs,"0:", 0);
+		if (Spi_Fr_Res == FR_OK)
+		{
+			printf(">挂载成功！\r\n");
+		}
+		else if(Spi_Fr_Res == FR_NO_FILESYSTEM)
+		{
+			printf(">挂载成功,格式化不成功！\r\n");
+			while(1);
+		}
+		else
+		{
+			printf(">初始化错误！\r\n");
+			while(1);
+		}
+	}
+	else if(Spi_Fr_Res == FR_OK)
+	{
+		printf(">挂载成功，有文件系统，可直接读写！\r\n");
 	}
 	else
 	{
-		return fatFs_Spi_Flash_Stat |=  STA_NOINIT;
+		printf(">挂载错误，文件系统初始化不成功！\r\n");
+		printf(">错误代码:%x\r\n",Spi_Fr_Res);
 	}
+	Spi_File_W_R_Test();
+	while(1);
 }
 
-//文件系统查询状态函数
-DSTATUS fatFs_Spi_Flash_Status(void)
+//测试文件创建和读写
+void Spi_File_W_R_Test(void)
 {
-	if(W25Q64_FLASH_ID == Spi_Flash_Read_ID1())
-	{
-		return fatFs_Spi_Flash_Stat &= ~STA_NOINIT;
-	}
-	else
-	{
-		return fatFs_Spi_Flash_Stat |=  STA_NOINIT;
-	}
-}
-//文件系统IO控制函数
-DRESULT fatFs_Spi_Flash_Ioctl(BYTE cmd,char *buff)
-{
-	switch (cmd)
-	{
-		case GET_SECTOR_SIZE:
-			*(WORD * )buff = 4096;		//flash最小写单元为页，256字节，此处取2页为一个读写单位
-			break;
-		case GET_BLOCK_SIZE:
-			*(DWORD * )buff = 1;		//flash以4k为最小擦除单位
-			break;
-		case GET_SECTOR_COUNT:
-			*(DWORD * )buff = 1536;		//sector数量
-			break;
-		case CTRL_SYNC:
-			break;
-		default:
-			break;
-	}
+	u8 	Spi_Flash_TxBuffer[] = "This is a flash test program!中文据说也能写！\r\n";
+	u8 	Spi_Flash_RxBuffer[RxBufferSize] = {0};
+	UINT File_Bw_Num_W = 0;
+	UINT File_Bw_Num_R = 0;
 	
-	return RES_OK;
-}
-//文件系统读接口
-DRESULT fatFs_Spi_Flash_Read(BYTE *buff, DWORD sector, UINT count)
-{
-	if ((fatFs_Spi_Flash_Stat & STA_NOINIT)) {
-		return RES_NOTRDY;
+	Spi_Fr_Res = f_open(&Spi_File,"0:Test.txt",FA_CREATE_ALWAYS | FA_WRITE);//同时读写不行 | FA_READ);
+	if(Spi_Fr_Res != FR_OK)
+	{
+		printf(">文件打开失败！\r\n");
+		printf(">错误代码:%x\r\n",Spi_Fr_Res);
+		while(1);
 	}
-	sector+=512;//扇区偏移，外部Flash文件系统空间放在外部Flash后面6M空间
-	Spi_Flash_Read_Buffer(buff, sector << 12, count<<12);
+	printf(">文件打开成功！\r\n");
+	Spi_Fr_Res = f_write(&Spi_File,Spi_Flash_TxBuffer,RxBufferSize,&File_Bw_Num_W);
+	if(Spi_Fr_Res != FR_OK)
+	{
+		printf(">文件写入失败！\r\n");
+		printf(">错误代码:%x\r\n",Spi_Fr_Res);
+		while(1);
+	}
+	printf(">文件写入成功！\r\n");
+	Spi_Fr_Res = f_close(&Spi_File);
 	
-	return RES_OK;
+	Spi_Fr_Res = f_open(&Spi_File,"0:Test.txt",FA_OPEN_EXISTING | FA_READ);
+	
+	Spi_Fr_Res = f_read(&Spi_File,Spi_Flash_RxBuffer,RxBufferSize,&File_Bw_Num_R);
+	if(Spi_Fr_Res != FR_OK)
+	{
+		printf(">文件读取失败！\r\n");
+		printf(">错误代码:%x\r\n",Spi_Fr_Res);
+		while(1);
+	}
+	printf(">文件读取成功！读取内容为：\r\n");
+	printf("%s",Spi_Flash_RxBuffer);
+	Spi_Fr_Res = f_close(&Spi_File);
+	Spi_Fr_Res = f_mount(NULL,"0:",1);
+	if(Spi_Fr_Res != FR_OK)
+	{
+		printf(">文件系统移植失败！\r\n");
+		printf(">错误代码:%x\r\n",Spi_Fr_Res);
+		while(1);
+	}
+	printf(">恭喜你，文件系统移植成功！\r\n");
+	while(1);
+	
 }
-//文件系统写接口
-DRESULT fatFs_Spi_Flash_Write(const BYTE *buff, DWORD sector, UINT count)
-{
-	uint32_t write_addr;  
-	sector+=512;//扇区偏移，外部Flash文件系统空间放在外部Flash后面6M空间
-	write_addr = sector<<12;    
-	Spi_Flash_Erase_Sector(write_addr);
-	Spi_Flash_Write_Buffer(buff,write_addr,4096);
-	return RES_OK;
-}
-
-
 

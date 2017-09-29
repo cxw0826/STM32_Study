@@ -12,6 +12,8 @@
 //#include "atadrive.h"	/* Example: ATA drive control */
 //#include "sdcard.h"		/* Example: MMC/SDC contorl */
 #include "ff.h"
+#include "Spi_Flash.h"
+
 
 /* Definitions of physical drive number for each drive */
 //#define ATA		0	/* Example: Map ATA drive to drive number 0 */
@@ -29,16 +31,15 @@ DSTATUS disk_status (
 )
 {
 	DSTATUS stat;
-	int result;
 
 	switch (pdrv) {
 	case Spi_Flash :
 		//result = ATA_disk_status();
-		result =  fatFs_Spi_Flash_Status();
+		stat =  fatFs_Spi_Flash_Status();
 
 		// translate the reslut code here
 
-		return result;
+		return stat;
 
 	case MMC :
 		//result = MMC_disk_status();
@@ -54,7 +55,7 @@ DSTATUS disk_status (
 
 		return stat;
 	}
-	return result;
+	return stat;
 	//return STA_NOINIT;
 }
 
@@ -69,16 +70,15 @@ DSTATUS disk_initialize (
 )
 {
 	DSTATUS stat;
-	int result;
 
 	switch (pdrv) {
 	case Spi_Flash :
 		//result = ATA_disk_initialize();
-		result = fatFs_Spi_Flash_Init();
+		stat = fatFs_Spi_Flash_Init();
 
 		// translate the reslut code here
 
-		return result;
+		return stat;
 
 	case MMC :
 		//result = MMC_disk_initialize();
@@ -95,7 +95,7 @@ DSTATUS disk_initialize (
 		return stat;
 	}
 	//return STA_NOINIT;
-	return result;
+	return stat;
 }
 
 
@@ -112,18 +112,17 @@ DRESULT disk_read (
 )
 {
 	DRESULT res;
-	int result;
 
 	switch (pdrv) {
 	case Spi_Flash :
 		// translate the arguments here
-		result = fatFs_Spi_Flash_Read(buff,sector,count);
+		res = fatFs_Spi_Flash_Read(buff,sector,count);//文件系统以块为读写单位
 
 		//result = ATA_disk_read(buff, sector, count);
 
 		// translate the reslut code here
 
-		return result;
+		return res;
 
 	case MMC :
 		// translate the arguments here
@@ -144,7 +143,7 @@ DRESULT disk_read (
 		return res;
 	}
 
-	return result;
+	return res;
 	//return RES_PARERR;
 }
 
@@ -163,18 +162,17 @@ DRESULT disk_write (
 )
 {
 	DRESULT res;
-	int result;
 
 	switch (pdrv) {
 	case Spi_Flash :
 		// translate the arguments here
-		result = fatFs_Spi_Flash_Write(buff,sector,count);
+		res = fatFs_Spi_Flash_Write((BYTE *)buff,sector,count);
 
 		//result = ATA_disk_write(buff, sector, count);
 
 		// translate the reslut code here
 
-		return result;
+		return res;
 
 	case MMC :
 		// translate the arguments here
@@ -195,7 +193,7 @@ DRESULT disk_write (
 		return res;
 	}
 
-	return result;
+	return res;
 	//return RES_PARERR;
 }
 #endif
@@ -213,15 +211,14 @@ DRESULT disk_ioctl (
 )
 {
 	DRESULT res;
-	int result;
 
 	switch (pdrv) {
 	case Spi_Flash :
-		result = fatFs_Spi_Flash_Ioctl(cmd,buff);
+		res = fatFs_Spi_Flash_Ioctl(cmd,buff);
 
 		// Process of the command for the ATA drive
 
-		return result;
+		return res;
 
 	case MMC :
 
@@ -236,7 +233,7 @@ DRESULT disk_ioctl (
 		return res;
 	}
 
-	return result;
+	return res;
 	//return RES_PARERR;
 }
 #endif

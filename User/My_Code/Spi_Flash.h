@@ -3,6 +3,9 @@
 
 #include "stm32f10x.h"
 #include "DMA_Uart.h"
+#include "ff.h"
+#include "diskio.h"
+#include "integer.h"
 
 //spi相关引脚定义
 #define W25Q64_SPI_Port		GPIOA
@@ -28,7 +31,8 @@
 //byte3为memory type
 //byte4为DeviceID
 #define W25Q64_JEDECID_REG  		0x9F	
-#define W25Q64_DEVICEID_REG  		0xAB	
+#define W25Q64_DEVICEID_REG  		0xAB
+#define W25Q64_DEVICE_ID			0xEF4017
 //定义操作W25Q64指令
 #define W25Q64_PAGE_WRITE_CMD		0x02
 #define W25Q64_READ_DATA			0x03
@@ -55,11 +59,20 @@
 #define W25Q64_MEMORY_SECTOR_14		0x00E000
 
 void Spi_Flash_Init(void);
-void Spi_Flash_Read_JEDEC_ID(void);
+u32	 Spi_Flash_Read_JEDEC_ID(void);
 void Spi_Flash_Erase_Sector(u32 Sector_Num);
 void Spi_Flash_Write_Buffer(u32 ADDR, u8 * DATA, u32 NumOfByte);
 void Spi_Flash_Read_Buffer(u32 ADDR,u8 *DATA,u32 NumOfRead);
 void Spi_Flash_Test(void);
+//
+//#define	FF_USE_MKFS 1
+//#define FF_FS_READONLY 0
+//
+DSTATUS fatFs_Spi_Flash_Init(void);
+DSTATUS fatFs_Spi_Flash_Status(void);
+DRESULT fatFs_Spi_Flash_Ioctl(BYTE cmd,char *buff);
+DRESULT fatFs_Spi_Flash_Read(BYTE *buff, DWORD sector, UINT count);
+DRESULT fatFs_Spi_Flash_Write(BYTE *buff, DWORD sector, UINT count);
 
 
 

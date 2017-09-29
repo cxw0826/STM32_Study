@@ -250,11 +250,10 @@ TCHAR* f_gets (TCHAR* buff, int len, FIL* fp);						/* Get a string from the fil
 /*--------------------------------------------------------------*/
 /* Additional user defined functions                            */
 
-/* RTC function 
+//RTC function 
 #if !_FS_READONLY && !_FS_NORTC
 DWORD get_fattime (void);
 #endif
-*/
 
 
 /* Unicode support functions */

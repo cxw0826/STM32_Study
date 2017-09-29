@@ -166,9 +166,13 @@
 #if _FS_NORTC
 #define GET_FATTIME()	((DWORD)_NORTC_YEAR << 25 | (DWORD)_NORTC_MON << 21 | (DWORD)_NORTC_MDAY << 16)
 #else
-//#define GET_FATTIME()	get_fattime()
+#define GET_FATTIME()	get_fattime()
 #endif
 
+DWORD get_fattime(void)
+{
+	return 0;
+}
 
 /* File access control feature */
 #if _FS_LOCK

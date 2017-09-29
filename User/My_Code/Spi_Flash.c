@@ -1,4 +1,5 @@
 #include "Spi_Flash.h"
+#include "diskio.h"
 
 //初始化引脚和SPI功能
 void Spi_Flash_Init(void)
@@ -67,11 +68,12 @@ u8 Spi_Flash_ReadByte(void)
 	return	(Spi_Flash_SendByte(DummyByte));
 }
 //读取设备deviceID
-void Spi_Flash_Read_JEDEC_ID(void)
+u32 Spi_Flash_Read_JEDEC_ID(void)
 {
-	u8 Manufator_ID = 0;
-	u8 Menmory_Type_ID = 0;
-	u8 Device_ID = 0;
+	u8 	Manufator_ID = 0;
+	u8 	Menmory_Type_ID = 0;
+	u8 	Device_ID = 0;
+	u32 DEV_ID = 0;
 	//先使能cs管脚
 	Spi_Flash_Cs_Enable();
 	//写要读的地址
@@ -84,10 +86,13 @@ void Spi_Flash_Read_JEDEC_ID(void)
 	Device_ID = Spi_Flash_ReadByte();
 	//失能CS管脚
 	Spi_Flash_Cs_Disable();
+	DEV_ID = (Manufator_ID << 16) | (Menmory_Type_ID << 8) | Device_ID;
 	//打印出相应的ID信息
-	printf("设备的Manufator_ID是:%x\r\n",Manufator_ID);
-	printf("设备的Menmory_Type_ID是:%x\r\n",Menmory_Type_ID);
-	printf("设备的Device_ID是:%x\r\n",Device_ID);
+	//printf("设备的Manufator_ID是:%x\r\n",Manufator_ID);
+	//printf("设备的Menmory_Type_ID是:%x\r\n",Menmory_Type_ID);
+	//printf("设备的Device_ID是:%x\r\n",Device_ID);
+	//printf("设备的Device_ID是:%x\r\n",DEV_ID);
+	return DEV_ID;
 }
 //等待操作完成函数，原理是获取设备的busy状态位
 void Spi_Flash_Wait_Instruction_End(void)
@@ -180,7 +185,7 @@ void Spi_Flash_Write_Page(u32 Addr,u8 *Data,u32 NumOfByte)
 	Spi_Flash_Wait_Instruction_End();
 }
 //写BUFFER数据
-void Spi_Flash_Write_Buffer(u32 ADDR,u8 *DATA,u32 NumOfByte)
+void Spi_Flash_Write_Buffer(u32 ADDR,u8* DATA,u32 NumOfByte)
 {
 	//数据一共有多少页
 	u8 NumOfPage = 0;
@@ -206,7 +211,7 @@ void Spi_Flash_Write_Buffer(u32 ADDR,u8 *DATA,u32 NumOfByte)
 		//写入数据不够1页
 		if(NumOfPage == 0)
 		{
-			Spi_Flash_Write_Page(PageAddr, DATA, NumOfByte);
+			Spi_Flash_Write_Page(ADDR, DATA, NumOfByte);
 		}
 		//写入数据超过1页
 		else
@@ -214,12 +219,12 @@ void Spi_Flash_Write_Buffer(u32 ADDR,u8 *DATA,u32 NumOfByte)
 			//先写整数页
 			while(NumOfPage--)
 			{
-				Spi_Flash_Write_Page(PageAddr, DATA, NumOfByte);
-				PageAddr = PageAddr + W25Q64_PAGE_SIZE;
+				Spi_Flash_Write_Page(ADDR, DATA, W25Q64_PAGE_SIZE);
+				ADDR = ADDR + W25Q64_PAGE_SIZE;
 				DATA = DATA + W25Q64_PAGE_SIZE;
 			}
 			//再写剩下的单个数据
-			Spi_Flash_Write_Page(PageAddr, DATA, NumOfSingleData);
+			Spi_Flash_Write_Page(ADDR, DATA, NumOfSingleData);
 		}
 	}
 	//如果写入的地址是不对齐的
@@ -234,18 +239,18 @@ void Spi_Flash_Write_Buffer(u32 ADDR,u8 *DATA,u32 NumOfByte)
 				//缓存一页写不完的数据
 				CntTmp = NumOfSingleData - PageTotalCnt;
 				//写一页剩下的空间
-				Spi_Flash_Write_Page(PageAddr, DATA, PageTotalCnt);
+				Spi_Flash_Write_Page(ADDR, DATA, PageTotalCnt);
 				//地址指向下一页起始
-				PageAddr = PageAddr + PageTotalCnt;
+				ADDR = ADDR + PageTotalCnt;
 				//数据指向下一页起始
 				DATA = DATA + PageTotalCnt;
 				//在下一页中写剩下的内容
-				Spi_Flash_Write_Page(PageAddr, DATA, CntTmp);
+				Spi_Flash_Write_Page(ADDR, DATA, CntTmp);
 			}
 			//如果要写的数据这一页够装，就直接写
 			else
 			{
-				Spi_Flash_Write_Page(PageAddr, DATA, NumOfByte);
+				Spi_Flash_Write_Page(ADDR, DATA, NumOfByte);
 			}
 		}
 		//如果写超过1页
@@ -256,7 +261,7 @@ void Spi_Flash_Write_Buffer(u32 ADDR,u8 *DATA,u32 NumOfByte)
 			//再计算一共还剩多少页
 			NumOfPage = NumOfByte / W25Q64_PAGE_SIZE;
 			//再计算还剩多少个单个数据
-			NumOfSingleData = NumOfPage / W25Q64_PAGE_SIZE;
+			NumOfSingleData = NumOfPage % W25Q64_PAGE_SIZE;
 			//先写不对齐的数据
 			Spi_Flash_Write_Page(ADDR, DATA, PageTotalCnt);
 			//地址指向下一页
@@ -266,7 +271,7 @@ void Spi_Flash_Write_Buffer(u32 ADDR,u8 *DATA,u32 NumOfByte)
 			//循环写入整数页数据
 			while(NumOfPage--)
 			{
-				Spi_Flash_Write_Page(ADDR, DATA, PageTotalCnt);
+				Spi_Flash_Write_Page(ADDR, DATA, W25Q64_PAGE_SIZE);
 				//地址指向下一页
 				ADDR = ADDR + W25Q64_PAGE_SIZE;
 				//数据指向下一页
@@ -298,15 +303,15 @@ void Spi_Flash_Read_Buffer(u32 ADDR,u8 *DATA,u32 NumOfRead)
 	Spi_Flash_Wait_Instruction_End();
 }
 
-u8 Spi_Flash_TxBuffer[] = "This is a flash test program!";
-u8 Spi_Flash_RxBuffer[RxBufferSize];
 
 //SPI_FLASH测试函数
 void Spi_Flash_Test(void)
 {
+	u8 Spi_Flash_TxBuffer[] = "This is a flash test program!";
+	u8 Spi_Flash_RxBuffer[RxBufferSize];
 	u32 Spi_Print_Cnt;
 	printf("SPI读ID测试!\r\n");
-	Spi_Flash_Read_JEDEC_ID();
+	Spi_Print_Cnt = Spi_Flash_Read_JEDEC_ID();
 	printf("spi页擦除\r\n");
 	Spi_Flash_Erase_Sector(W25Q64_MEMORY_SECTOR_0);
 	printf("spi写buffer\r\n");
@@ -322,4 +327,85 @@ void Spi_Flash_Test(void)
 	printf("打印完毕，SPI测试完毕!\r\n");
 }
 
+//SPI_FLASH测试函数
+
+//----------------------------------------------------------
+//下面函数是FATFS文件系统接口函数
+//
+//
+//----------------------------------------------------------
+
+static volatile DSTATUS fatFs_Spi_Flash_Stat = STA_NOINIT;	/* Physical drive status */
+
+
+//文件系统初始化函数
+DSTATUS fatFs_Spi_Flash_Init(void)
+{
+	Spi_Flash_Init();
+	if(W25Q64_DEVICE_ID == Spi_Flash_Read_JEDEC_ID())
+	{
+		//printf("W25Q64_FLASH_ID == Spi_Flash_Read_ID1()\r\n");
+		return fatFs_Spi_Flash_Stat &= ~STA_NOINIT;
+	}
+	else
+	{
+		return fatFs_Spi_Flash_Stat |=  STA_NOINIT;
+	}
+}
+
+//文件系统查询状态函数
+DSTATUS fatFs_Spi_Flash_Status(void)
+{
+	if(W25Q64_DEVICE_ID == Spi_Flash_Read_JEDEC_ID())
+	{
+		return fatFs_Spi_Flash_Stat &= ~STA_NOINIT;
+	}
+	else
+	{
+		return fatFs_Spi_Flash_Stat |=  STA_NOINIT;
+	}
+}
+//文件系统IO控制函数
+DRESULT fatFs_Spi_Flash_Ioctl(BYTE cmd,char *buff)
+{
+	switch (cmd)
+	{
+		case GET_SECTOR_SIZE:
+			*(WORD * )buff = 4096;		//flash最小写单元为页，256字节，此处取2页为一个读写单位
+			break;
+		case GET_BLOCK_SIZE:
+			*(DWORD * )buff = 1;		//flash以4k为最小擦除单位
+			break;
+		case GET_SECTOR_COUNT:
+			*(DWORD * )buff = 1536;		//sector数量
+			break;
+		case CTRL_SYNC:
+			break;
+		default:
+			break;
+	}
+	
+	return RES_OK;
+}
+//文件系统读接口
+DRESULT fatFs_Spi_Flash_Read(BYTE *buff, DWORD sector, UINT count)
+{
+	if ((fatFs_Spi_Flash_Stat & STA_NOINIT)) {
+		return RES_NOTRDY;
+	}
+	//sector+=512;//扇区偏移，外部Flash文件系统空间放在外部Flash后面6M空间
+	Spi_Flash_Read_Buffer(sector << 12,buff,count<<12);
+	
+	return RES_OK;
+}
+//文件系统写接口
+DRESULT fatFs_Spi_Flash_Write(BYTE *buff, DWORD sector, UINT count)
+{
+	u32 write_addr;  
+	//sector+=512;//扇区偏移，外部Flash文件系统空间放在外部Flash后面6M空间
+	write_addr = sector<<12;    
+	Spi_Flash_Erase_Sector(write_addr);
+	Spi_Flash_Write_Buffer(write_addr,buff,count<<12);
+	return RES_OK;
+}
 

@@ -33,7 +33,7 @@
 /   3: f_lseek() function is removed in addition to 2. */
 
 
-#define	_USE_STRFUNC	0
+#define	_USE_STRFUNC	2
 /* This option switches string functions, f_gets(), f_putc(), f_puts() and
 /  f_printf().
 /
@@ -42,7 +42,7 @@
 /  2: Enable with LF-CRLF conversion. */
 
 
-#define	_USE_MKFS		0
+#define	_USE_MKFS		1
 /* This option switches f_mkfs() function. (0:Disable or 1:Enable)
 /  To enable it, also _FS_READONLY need to be set to 0. */
 
@@ -51,7 +51,7 @@
 /* This option switches fast seek feature. (0:Disable or 1:Enable) */
 
 
-#define _USE_LABEL		0
+#define _USE_LABEL		1
 /* This option switches volume label functions, f_getlabel() and f_setlabel().
 /  (0:Disable or 1:Enable) */
 
@@ -65,7 +65,7 @@
 / Locale and Namespace Configurations
 /---------------------------------------------------------------------------*/
 
-#define _CODE_PAGE	932
+#define _CODE_PAGE	936
 /* This option specifies the OEM code page to be used on the target system.
 /  Incorrect setting of the code page can cause a file open failure.
 /
@@ -97,7 +97,7 @@
 /   1    - ASCII (No extended character. Valid for only non-LFN configuration.) */
 
 
-#define	_USE_LFN	0
+#define	_USE_LFN	2
 #define	_MAX_LFN	255
 /* The _USE_LFN option switches the LFN feature.
 /
@@ -145,7 +145,7 @@
 / Drive/Volume Configurations
 /---------------------------------------------------------------------------*/
 
-#define _VOLUMES	1
+#define _VOLUMES	2
 /* Number of volumes (logical drives) to be used. */
 
 
@@ -167,7 +167,7 @@
 
 
 #define	_MIN_SS		512
-#define	_MAX_SS		512
+#define	_MAX_SS		4096
 /* These options configure the range of sector size to be supported. (512, 1024,
 /  2048 or 4096) Always set both 512 for most systems, all type of memory cards and
 /  harddisk. But a larger value may be required for on-board flash memory and some
