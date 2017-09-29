@@ -215,11 +215,7 @@ void Spi_Flash_Write_Page(u32 Addr,const BYTE  *Data,u32 NumOfByte)
 	Spi_Flash_Wait_Instruction_End();
 }
 //写BUFFER数据
-<<<<<<< HEAD
 void Spi_Flash_Write_Buffer(u32 ADDR,u8* DATA,u32 NumOfByte)
-=======
-void Spi_Flash_Write_Buffer(const BYTE *DATA,DWORD ADDR,UINT NumOfByte)
->>>>>>> 238c1cde672cec4ea517a2ee3e54741207880b25
 {
 	//数据一共有多少页
 	u8 NumOfPage = 0;
@@ -337,14 +333,7 @@ void Spi_Flash_Read_Buffer(BYTE *DATA,DWORD ADDR,UINT NumOfRead)
 	Spi_Flash_Wait_Instruction_End();
 }
 
-<<<<<<< HEAD
-
 //SPI_FLASH测试函数
-=======
-u8 Spi_Flash_TxBuffer[] = "This is a flash test program!";
-u8 Spi_Flash_RxBuffer[RxBufferSize];
-/*
->>>>>>> 238c1cde672cec4ea517a2ee3e54741207880b25
 void Spi_Flash_Test(void)
 {
 	u8 Spi_Flash_TxBuffer[] = "This is a flash test program!";
@@ -355,7 +344,7 @@ void Spi_Flash_Test(void)
 	printf("spi页擦除\r\n");
 	Spi_Flash_Erase_Sector(W25Q64_MEMORY_SECTOR_0);
 	printf("spi写buffer\r\n");
-	Spi_Flash_Write_Buffer(Spi_Flash_TxBuffer,W25Q64_MEMORY_SECTOR_0,RxBufferSize);
+	Spi_Flash_Write_Buffer(W25Q64_MEMORY_SECTOR_0,Spi_Flash_TxBuffer,RxBufferSize);
 	printf("写入的数据为：%s \r\n", Spi_Flash_TxBuffer);
 	Spi_Flash_Read_Buffer(Spi_Flash_RxBuffer,W25Q64_MEMORY_SECTOR_0,RxBufferSize);
 	printf("SPI读出来的数据是：\r\n");
@@ -366,7 +355,6 @@ void Spi_Flash_Test(void)
 	printf("\r\n");
 	printf("打印完毕，SPI测试完毕!\r\n");
 }
-*/
 
 //SPI_FLASH测试函数
 
@@ -435,7 +423,7 @@ DRESULT fatFs_Spi_Flash_Read(BYTE *buff, DWORD sector, UINT count)
 		return RES_NOTRDY;
 	}
 	//sector+=512;//扇区偏移，外部Flash文件系统空间放在外部Flash后面6M空间
-	Spi_Flash_Read_Buffer(sector << 12,buff,count<<12);
+	Spi_Flash_Read_Buffer(buff,sector << 12,count<<12);
 	
 	return RES_OK;
 }

@@ -24,12 +24,7 @@ int main(void)
 	//DMA_TX_Uart_Test();
 	//DMA_Uart_Recv_Send_Test();
 	//Spi_Flash_Test();
-<<<<<<< HEAD
 	Spi_Fs_Test();
-	
-=======
-	fatFs_Spi_Flash_Test();
->>>>>>> 238c1cde672cec4ea517a2ee3e54741207880b25
 		
 	while( 1 )
 	{
