@@ -3,9 +3,15 @@
 
 #include "stm32f10x.h"
 #include "DMA_Uart.h"
+<<<<<<< HEAD
 #include "ff.h"
 #include "diskio.h"
 #include "integer.h"
+=======
+#include "integer.h"
+#include "ff.h"
+#include "diskio.h"
+>>>>>>> 238c1cde672cec4ea517a2ee3e54741207880b25
 
 //spi相关引脚定义
 #define W25Q64_SPI_Port		GPIOA
@@ -57,8 +63,10 @@
 #define W25Q64_MEMORY_SECTOR_12		0x00C000
 #define W25Q64_MEMORY_SECTOR_13		0x00D000
 #define W25Q64_MEMORY_SECTOR_14		0x00E000
+#define W25Q64_FLASH_ID             0XEF4017    //W25Q64
 
 void Spi_Flash_Init(void);
+<<<<<<< HEAD
 u32	 Spi_Flash_Read_JEDEC_ID(void);
 void Spi_Flash_Erase_Sector(u32 Sector_Num);
 void Spi_Flash_Write_Buffer(u32 ADDR, u8 * DATA, u32 NumOfByte);
@@ -68,11 +76,28 @@ void Spi_Flash_Test(void);
 //#define	FF_USE_MKFS 1
 //#define FF_FS_READONLY 0
 //
+=======
+void Spi_Flash_Read_JEDEC_ID(void);
+u32 Spi_Flash_Read_ID1(void);
+void Spi_Flash_Erase_Sector(u32 Sector_Num);
+void Spi_Flash_Write_Buffer(const BYTE *DATA,DWORD ADDR,UINT NumOfByte);
+void Spi_Flash_Read_Buffer(BYTE *DATA,DWORD ADDR,UINT NumOfRead);
+//void Spi_Flash_Write_Buffer(u32 ADDR, u8 * DATA, u32 NumOfByte);
+//void Spi_Flash_Read_Buffer(u32 ADDR,u8 *DATA,u32 NumOfRead);
+//void Spi_Flash_Test(void);
+
+void fatFs_Spi_Flash_Test(void);
+>>>>>>> 238c1cde672cec4ea517a2ee3e54741207880b25
 DSTATUS fatFs_Spi_Flash_Init(void);
 DSTATUS fatFs_Spi_Flash_Status(void);
 DRESULT fatFs_Spi_Flash_Ioctl(BYTE cmd,char *buff);
 DRESULT fatFs_Spi_Flash_Read(BYTE *buff, DWORD sector, UINT count);
+<<<<<<< HEAD
 DRESULT fatFs_Spi_Flash_Write(BYTE *buff, DWORD sector, UINT count);
+=======
+DRESULT fatFs_Spi_Flash_Write(const BYTE *buff, DWORD sector, UINT count);
+
+>>>>>>> 238c1cde672cec4ea517a2ee3e54741207880b25
 
 
 

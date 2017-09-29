@@ -1,6 +1,8 @@
 #include "Spi_Flash.h"
 #include "diskio.h"
 
+
+
 //初始化引脚和SPI功能
 void Spi_Flash_Init(void)
 {
@@ -51,7 +53,7 @@ void Spi_Flash_Init(void)
 }
 
 //向设备发送一个字节
-u8 Spi_Flash_SendByte(u8 Byte)
+u8 Spi_Flash_SendByte(const BYTE Byte)
 {
 	//先判断是否发送完成
 	while(SPI_I2S_GetFlagStatus(W25Q64_SPIX,SPI_I2S_FLAG_TXE) == RESET);
@@ -110,6 +112,34 @@ void Spi_Flash_Wait_Instruction_End(void)
 	while ((Instruction_State & W25Q64_WIP_FLAG) == SET);
 	Spi_Flash_Cs_Disable();
 }
+//读全ID
+u32 Spi_Flash_Read_ID1(void)
+{
+  u32 Temp = 0, Temp0 = 0, Temp1 = 0, Temp2 = 0;
+
+  /* Select the FLASH: Chip Select low */
+  Spi_Flash_Cs_Enable();
+
+  /* Send "RDID " instruction */
+  Spi_Flash_SendByte(W25Q64_JEDECID_REG);
+
+  /* Read a byte from the FLASH */
+  Temp0 = Spi_Flash_ReadByte();
+
+  /* Read a byte from the FLASH */
+  Temp1 = Spi_Flash_ReadByte();
+
+  /* Read a byte from the FLASH */
+  Temp2 = Spi_Flash_ReadByte();
+
+  /* Deselect the FLASH: Chip Select high */
+  Spi_Flash_Cs_Disable();
+
+  Temp = (Temp0 << 16) | (Temp1 << 8) | Temp2;
+
+  return Temp;
+}
+
 //读另外一个寄存器中的deviceID
 void Spi_Flash_Read_ID2(void)
 {
@@ -157,7 +187,7 @@ void Spi_Flash_Erase_Sector(u32 Sector_Num)
 	Spi_Flash_Wait_Instruction_End();
 }
 //写页函数
-void Spi_Flash_Write_Page(u32 Addr,u8 *Data,u32 NumOfByte)
+void Spi_Flash_Write_Page(u32 Addr,const BYTE  *Data,u32 NumOfByte)
 {
 	Spi_Flash_Wait_Instruction_End();
 	Spi_Flash_Write_Enable();
@@ -185,7 +215,11 @@ void Spi_Flash_Write_Page(u32 Addr,u8 *Data,u32 NumOfByte)
 	Spi_Flash_Wait_Instruction_End();
 }
 //写BUFFER数据
+<<<<<<< HEAD
 void Spi_Flash_Write_Buffer(u32 ADDR,u8* DATA,u32 NumOfByte)
+=======
+void Spi_Flash_Write_Buffer(const BYTE *DATA,DWORD ADDR,UINT NumOfByte)
+>>>>>>> 238c1cde672cec4ea517a2ee3e54741207880b25
 {
 	//数据一共有多少页
 	u8 NumOfPage = 0;
@@ -286,7 +320,7 @@ void Spi_Flash_Write_Buffer(u32 ADDR,u8* DATA,u32 NumOfByte)
 	}
 }
 //读buffer函数
-void Spi_Flash_Read_Buffer(u32 ADDR,u8 *DATA,u32 NumOfRead)
+void Spi_Flash_Read_Buffer(BYTE *DATA,DWORD ADDR,UINT NumOfRead)
 {
 	Spi_Flash_Wait_Instruction_End();
 	Spi_Flash_Cs_Enable();
@@ -303,8 +337,14 @@ void Spi_Flash_Read_Buffer(u32 ADDR,u8 *DATA,u32 NumOfRead)
 	Spi_Flash_Wait_Instruction_End();
 }
 
+<<<<<<< HEAD
 
 //SPI_FLASH测试函数
+=======
+u8 Spi_Flash_TxBuffer[] = "This is a flash test program!";
+u8 Spi_Flash_RxBuffer[RxBufferSize];
+/*
+>>>>>>> 238c1cde672cec4ea517a2ee3e54741207880b25
 void Spi_Flash_Test(void)
 {
 	u8 Spi_Flash_TxBuffer[] = "This is a flash test program!";
@@ -315,9 +355,9 @@ void Spi_Flash_Test(void)
 	printf("spi页擦除\r\n");
 	Spi_Flash_Erase_Sector(W25Q64_MEMORY_SECTOR_0);
 	printf("spi写buffer\r\n");
-	Spi_Flash_Write_Buffer(W25Q64_MEMORY_SECTOR_0,Spi_Flash_TxBuffer,RxBufferSize);
+	Spi_Flash_Write_Buffer(Spi_Flash_TxBuffer,W25Q64_MEMORY_SECTOR_0,RxBufferSize);
 	printf("写入的数据为：%s \r\n", Spi_Flash_TxBuffer);
-	Spi_Flash_Read_Buffer(W25Q64_MEMORY_SECTOR_0,Spi_Flash_RxBuffer,RxBufferSize);
+	Spi_Flash_Read_Buffer(Spi_Flash_RxBuffer,W25Q64_MEMORY_SECTOR_0,RxBufferSize);
 	printf("SPI读出来的数据是：\r\n");
 	for(Spi_Print_Cnt=0;Spi_Print_Cnt<RxBufferSize;Spi_Print_Cnt++)
 	{
@@ -326,6 +366,7 @@ void Spi_Flash_Test(void)
 	printf("\r\n");
 	printf("打印完毕，SPI测试完毕!\r\n");
 }
+*/
 
 //SPI_FLASH测试函数
 
